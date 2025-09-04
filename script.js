@@ -1,16 +1,13 @@
 // script.js
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if API_KEY is defined
     if (typeof API_KEY === 'undefined') {
         console.error('API key is not defined! Please check your config.js file.');
         return;
     }
 
-    const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // For posters
-    const POSTER_PLACEHOLDER = 'https://via.placeholder.com/200x300.png?text=No+Image+Available';
+    const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+    const POSTER_PLACEHOLDER = 'https://via.placeholder.com/220x330.png?text=Image+Not+Found';
 
-
-    // Function to fetch data from TMDb
     async function fetchData(endpoint) {
         const url = `https://api.themoviedb.org/3/${endpoint}?api_key=${API_KEY}&language=en-US&page=1`;
         try {
@@ -22,11 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return data.results;
         } catch (error) {
             console.error(`Error fetching data from ${endpoint}:`, error);
-            return []; // Return empty array on error
+            return [];
         }
     }
 
-    // Function to create and display content cards within a carousel track
     function displayContent(sectionId, items, isMovie = true) {
         const carouselTrack = document.querySelector(`#${sectionId} .carousel-track`);
         if (!carouselTrack) {
@@ -34,23 +30,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        carouselTrack.innerHTML = ''; // Clear previous content
+        carouselTrack.innerHTML = '';
 
         items.forEach(item => {
+            if (!item.poster_path) return; // Skip items without a poster
+
             const title = isMovie ? (item.title || item.original_title) : (item.name || item.original_name);
             const overview = item.overview || 'No description available.';
-            const posterPath = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : POSTER_PLACEHOLDER;
+            const posterPath = `${IMAGE_BASE_URL}${item.poster_path}`;
             const voteAverage = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
 
             const card = document.createElement('div');
             card.classList.add('item-card');
 
+            // This is the new HTML structure for the card with overlays
             card.innerHTML = `
-                <img src="${posterPath}" alt="${title} Poster" class="poster">
+                <img src="${posterPath}" alt="${title} Poster" class="poster" loading="lazy">
+                
                 <div class="rating">
                     <i class="fas fa-star"></i> ${voteAverage}
                 </div>
-                <div class="card-content">
+
+                <div class="card-overlay">
                     <h3>${title}</h3>
                     <p class="overview">${overview}</p>
                 </div>
@@ -60,39 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Fetching and Displaying various categories ---
-
-    // Popular Movies
-    fetchData('movie/popular').then(movies => {
-        displayContent('movies-popular', movies, true);
-    });
-
-    // Movies Now Playing (In Theatres)
-    fetchData('movie/now_playing').then(movies => {
-        displayContent('now-playing-movies', movies, true);
-    });
-
-    // Upcoming Movies
-    fetchData('movie/upcoming').then(movies => {
-        displayContent('upcoming-movies', movies, true);
-    });
-
-    // Top Rated Movies
-    fetchData('movie/top_rated').then(movies => {
-        displayContent('top-rated-movies', movies, true);
-    });
-
-    // Popular TV Shows
-    fetchData('tv/popular').then(tvShows => {
-        displayContent('tv-popular', tvShows, false);
-    });
-
-    // TV Shows On The Air
-    fetchData('tv/on_the_air').then(tvShows => {
-        displayContent('tv-on-the-air', tvShows, false);
-    });
-
-    // Top Rated TV Shows
-    fetchData('tv/top_rated').then(tvShows => {
-        displayContent('tv-top-rated', tvShows, false);
-    });
+    fetchData('movie/popular').then(data => displayContent('movies-popular', data, true));
+    fetchData('movie/now_playing').then(data => displayContent('now-playing-movies', data, true));
+    fetchData('movie/upcoming').then(data => displayContent('upcoming-movies', data, true));
+    fetchData('movie/top_rated').then(data => displayContent('top-rated-movies', data, true));
+    fetchData('tv/popular').then(data => displayContent('tv-popular', data, false));
+    fetchData('tv/on_the_air').then(data => displayContent('tv-on-the-air', data, false));
+    fetchData('tv/top_rated').then(data => displayContent('tv-top-rated', data, false));
 });
